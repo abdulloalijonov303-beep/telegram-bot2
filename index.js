@@ -36,15 +36,26 @@ async function isJoined(ctx){
  }catch(e){ return false; }
 }
 
-bot.start(async(ctx)=>{
- addUser(ctx.from);
- if(!(await isJoined(ctx))){
-  return ctx.reply("📢 Kanalga obuna bo‘ling", Markup.inlineKeyboard([
-   [Markup.button.url("📢 Kanal",`https://t.me/${CHANNEL.replace("@","")}`)],
-   [Markup.button.callback("✅ Tekshirish","check_sub")]
-  ]));
- }
- ctx.reply("🎬 Xush kelibsiz! Kino kodini yuboring.");
+bot.start(async (ctx) => {
+  addUser(ctx.from);
+
+  const username = ctx.from.username
+    ? `@${ctx.from.username}`
+    : ctx.from.first_name;
+
+  if (!(await isJoined(ctx))) {
+    return ctx.reply(
+      `👋 Assalomu alaykum, ${username}!\n\n📢 Kanalga obuna bo‘ling:`,
+      Markup.inlineKeyboard([
+        [Markup.button.url("📢 Kanal", `https://t.me/${CHANNEL.replace("@", "")}`)],
+        [Markup.button.callback("✅ Tekshirish", "check_sub")]
+      ])
+    );
+  }
+
+  ctx.reply(
+    `👋 Assalomu alaykum, ${username}!\n\n🎬 Xush kelibsiz! Kino kodini yuboring.`
+  );
 });
 
 bot.action("check_sub", async(ctx)=>{
