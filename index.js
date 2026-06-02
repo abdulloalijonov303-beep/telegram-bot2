@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { Telegraf, Markup } = require("telegraf");
 const fs = require("fs");
-
+const text = ctx.message.text.trim();
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const CHANNEL = "@kinolar_uzb1l";
 const ADMIN_PASSWORD = "HPR";
@@ -109,16 +109,21 @@ bot.on("text",(ctx)=>{
 
  if(text===ADMIN_PASSWORD) return;
 
- if(deleteMode[id]){
-   if(movies[text]){
-     delete movies[text];
-     saveMovies(movies);
-     delete deleteMode[id];
-     return ctx.reply("✅ Kino o‘chirildi");
-   }
-   delete deleteMode[id];
-   return ctx.reply("❌ Bunday kod topilmadi");
- }
+if (deleteMode[id]) {
+    const code = text.trim();
+
+    if (movies[code]) {
+        delete movies[code];
+        saveMovies(movies);
+
+        delete deleteMode[id];
+
+        return ctx.reply(`✅ ${code} kodli kino o‘chirildi!`);
+    }
+
+    delete deleteMode[id];
+    return ctx.reply("❌ Bunday kodli kino topilmadi!");
+}
 
  if(addMovie[id]){
    if(addMovie[id].step==="code"){
