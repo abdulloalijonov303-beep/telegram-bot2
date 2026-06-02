@@ -52,101 +52,94 @@ bot.action("check_sub", async(ctx)=>{
  await ctx.answerCbQuery(ok?"✅ Tasdiqlandi":"❌ Obuna bo‘ling");
  if(ok) ctx.reply("🎬 Endi kino kodini yuboring.");
 });
+bot.on("text", async (ctx) => {
+  addUser(ctx.from);
 
-bot.hears(ADMIN_PASSWORD,(ctx)=>{
- adminMode[ctx.from.id]=true;
- ctx.reply("🔐 Admin panel", Markup.keyboard([
-  ["➕ Kino qo‘shish","❌ Kino o‘chirish"],
-  ["📊 Statistika","👥 Userlar"],
-  ["🚪 Chiqish"]
- ]).resize());
-});
+  const id = ctx.from.id;
+  const text = ctx.message.text.trim();
+  const movies = loadMovies();
 
-bot.hears("🚪 Chiqish",(ctx)=>{
- delete adminMode[ctx.from.id];
- ctx.reply("❌ Admin paneldan chiqildi", Markup.removeKeyboard());
-});
+  if (text === ADMIN_PASSWORD) return;
 
-bot.hears("📊 Statistika",(ctx)=>{
- if(!adminMode[ctx.from.id]) return;
- ctx.reply(`📦 Kinolar: ${Object.keys(loadMovies()).length}\n👥 Userlar: ${loadUsers().length}`);
-});
+  // ===================== ADMIN CHIQISH =====================
+  if (text === "🚪 Chiqish") {
+    delete adminMode[id];
+    delete addMovie[id];
+    delete deleteMode[id];
 
-bot.hears("👥 Userlar",(ctx)=>{
- if(!adminMode[ctx.from.id]) return;
- const txt=loadUsers().map(u=>`• ${u.username||u.first_name||u.id}`).join("\n") || "User yo‘q";
- ctx.reply(txt);
-});
+    return ctx.reply(
+      "❌ Admin paneldan chiqildi",
+      Markup.removeKeyboard()
+    );
+  }
 
-bot.hears("➕ Kino qo‘shish",(ctx)=>{
- if(!adminMode[ctx.from.id]) return;
- addMovie[ctx.from.id]={step:"code"};
- ctx.reply("🎬 Kino kodini yuboring");
-});
+  // ===================== STATISTIKA =====================
+  if (text === "📊 Statistika") {
+    if (!adminMode[id]) return;
 
-bot.hears("❌ Kino o‘chirish",(ctx)=>{
- if(!adminMode[ctx.from.id]) return;
- deleteMode[ctx.from.id]=true;
- ctx.reply("🗑 Kino kodini yuboring");
-});
+    return ctx.reply(
+      `📦 Kinolar: ${Object.keys(movies).length}\n👥 Userlar: ${loadUsers().length}`
+    );
+  }
 
-bot.on("text",(ctx)=>{
- addUser(ctx.from);
- const id=ctx.from.id;
- const text=ctx.message.text;
- const movies=loadMovies();
+  // ===================== USERLAR =====================
+  if (text === "👥 Userlar") {
+    if (!adminMode[id]) return;
 
- if(text===ADMIN_PASSWORD) return;
+    const txt = loadUsers()
+      .map(u => `• ${u.username || u.first_name || u.id}`)
+      .join("\n") || "User yo‘q";
 
- if(deleteMode[id]){
-   if(movies[text]){
-     delete movies[text];
-     saveMovies(movies);
-     delete deleteMode[id];
-     return ctx.reply("✅ Kino o‘chirildi");
-   }
-   delete deleteMode[id];
-   return ctx.reply("❌ Bunday kod topilmadi");
- }
+    return ctx.reply(txt);
+  }
 
- if(addMovie[id]){
-   if(addMovie[id].step==="code"){
-     addMovie[id].code=text;
-     addMovie[id].step="name";
-     return ctx.reply("📝 Kino nomini yuboring");
-   }
-   if(addMovie[id].step==="name"){
-     addMovie[id].name=text;
-     addMovie[id].step="video";
-     return ctx.reply("📹 Endi videoni yuboring");
-   }
-   if(addMovie[id].step==="video"){
-     return ctx.reply("📹 Iltimos video yuboring");
-   }
- }
+  // ===================== KINO O‘CHIRISH =====================
+  if (deleteMode[id]) {
+    const code = text;
 
- if(movies[text]){
-   return ctx.replyWithVideo(movies[text].fileId,{
-    caption:`🎬 ${movies[text].name}\n\n🍿 Maroqli tomosha tilaymiz!`
-   });
- }
+    if (movies[code]) {
+      delete movies[code];
+      saveMovies(movies);
+      delete deleteMode[id];
 
- ctx.reply("❌ Bu kod bo‘yicha kino topilmadi.");
-});
+      return ctx.reply(`✅ ${code} kodli kino o‘chirildi`);
+    }
 
-bot.on("video",(ctx)=>{
- const id=ctx.from.id;
- if(!addMovie[id] || addMovie[id].step!=="video") return;
+    delete deleteMode[id];
+    return ctx.reply("❌ Bunday kod topilmadi");
+  }
 
- const movies=loadMovies();
- movies[addMovie[id].code]={
-   name:addMovie[id].name,
-   fileId:ctx.message.video.file_id
- };
- saveMovies(movies);
+  // ===================== KINO QO‘SHISH STEP =====================
+  if (addMovie[id]) {
 
- delete addMovie[id];
- ctx.reply("✅ Kino muvaffaqiyatli qo‘shildi!");
+    if (addMovie[id].step === "code") {
+      addMovie[id].code = text;
+      addMovie[id].step = "name";
+
+      return ctx.reply("📝 Kino nomini yuboring");
+    }
+
+    if (addMovie[id].step === "name") {
+      addMovie[id].name = text;
+      addMovie[id].step = "video";
+
+      return ctx.reply("📹 Endi videoni yuboring");
+    }
+
+    return;
+  }
+
+  // ===================== USER KINO QIDIRISH =====================
+  if (!adminMode[id] && movies[text]) {
+    return ctx.replyWithVideo(movies[text].fileId, {
+      caption: `🎬 ${movies[text].name}\n\n🍿 Maroqli tomosha tilaymiz!`
+    });
+  }
+
+  // ===================== DEFAULT =====================
+  if (!adminMode[id]) {
+    return ctx.reply("❌ Bu kod bo‘yicha kino topilmadi.");
+  }
 });
 
 bot.launch().then(()=>console.log("Bot started"));
