@@ -1,7 +1,7 @@
 require("dotenv").config();
 const { Telegraf, Markup } = require("telegraf");
 const fs = require("fs");
-const text = ctx.message.text.trim();
+
 const bot = new Telegraf(process.env.BOT_TOKEN);
 const CHANNEL = "@kinolar_uzb1l";
 const ADMIN_PASSWORD = "HPR";
@@ -104,7 +104,7 @@ bot.hears("❌ Kino o‘chirish",(ctx)=>{
 bot.on("text",(ctx)=>{
  addUser(ctx.from);
  const id=ctx.from.id;
- const text=ctx.message.text;
+  const text = ctx.message.text.trim();
  const movies=loadMovies();
 
  if(text===ADMIN_PASSWORD) return;
